@@ -56,7 +56,6 @@
   <ItemGroup>
     <Content Include="node\LICENSE" />
     <Content Include="node\package.json" />
-    <Content Include="node\README.markdown" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="node\node_modules\" />
