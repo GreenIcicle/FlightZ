@@ -1,16 +1,17 @@
-
-var pipeline = require('./Pipeline')
-var simulator = require('./Simulator')
+var flightZ = require('./index')
 var seaportHost = 'localhost';
 var seaportPort = 9090;
-var seaport = require('seaport').connect(seaportHost, seaportPort);
-var simServer = pipeline.createServer('flightZ-sim@1.0.0', seaport);
+var pump = flightZ.pump({
+    seaportHost: seaportHost,
+    seaportPort: seaportPort,
+    role: 'sim@1.0.0'
+});
 var planeCount = 0;
 for(var index = 0; index < 1000; index++) {
-    simServer.addSourceStream(simulator.createSimulationStream());
+    flightZ.simulatedPlane().pipe(pump);
     planeCount++;
 }
 setInterval(function () {
-    console.log(simServer.stats());
+    console.log(pump.stats());
 }, 1000);
 

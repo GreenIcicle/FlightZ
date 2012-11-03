@@ -29,12 +29,6 @@
   <ItemGroup>
     <TypeScriptCompile Include="node\hub.ts" />
     <TypeScriptCompile Include="node\sim.ts" />
-    <Content Include="node\Copy %282%29 of index.js">
-      <DependentUpon>sim.ts</DependentUpon>
-    </Content>
-    <Content Include="node\Copy of index.js">
-      <DependentUpon>hub.ts</DependentUpon>
-    </Content>
     <Content Include="node\index.js">
       <DependentUpon>index.ts</DependentUpon>
     </Content>
