@@ -1,4 +1,4 @@
-==== FlightZ ====
+#FlightZ
 This is an exploration/demo app for some Node.js stuff I currently care about: 
 - Streams as units of data processing
 - Subtack's Seaport module
