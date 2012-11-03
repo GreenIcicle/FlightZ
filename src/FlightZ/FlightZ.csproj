@@ -1,0 +1,88 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <ProjectGuid>{77285DE9-B130-4184-B54C-5C90BF68BDED}</ProjectGuid>
+    <ProjectTypeGuids>{349c5851-65df-11da-9384-00065b846f21};{fae04ec0-301f-11d3-bf4b-00c04f79efbc}</ProjectTypeGuids>
+    <OutputType>Library</OutputType>
+    <OutputPath>bin</OutputPath>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <DebugType>full</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+    <FileUpgradeFlags>
+    </FileUpgradeFlags>
+    <OldToolsVersion>4.0</OldToolsVersion>
+    <UseIISExpress>true</UseIISExpress>
+    <IISExpressSSLPort />
+    <IISExpressAnonymousAuthentication />
+    <IISExpressWindowsAuthentication />
+    <IISExpressUseClassicPipelineMode />
+    <UpgradeBackupLocation />
+  </PropertyGroup>
+  <PropertyGroup>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
+    <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
+  </PropertyGroup>
+  <PropertyGroup>
+    <RootNamespace>FlightZ</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <TypeScriptCompile Include="node\hub.ts" />
+    <TypeScriptCompile Include="node\sim.ts" />
+    <Content Include="node\Copy %282%29 of index.js">
+      <DependentUpon>sim.ts</DependentUpon>
+    </Content>
+    <Content Include="node\Copy of index.js">
+      <DependentUpon>hub.ts</DependentUpon>
+    </Content>
+    <Content Include="node\index.js">
+      <DependentUpon>index.ts</DependentUpon>
+    </Content>
+    <Content Include="node\node.d.ts" />
+    <Content Include="node\Pipeline.js">
+      <DependentUpon>Pipeline.ts</DependentUpon>
+    </Content>
+    <Content Include="node\Simulator.js">
+      <DependentUpon>Simulator.ts</DependentUpon>
+    </Content>
+    <TypeScriptCompile Include="node\Simulator.ts" />
+    <TypeScriptCompile Include="node\Pipeline.ts" />
+    <TypeScriptCompile Include="node\index.ts" />
+    <Content Include="node\Flight.js">
+      <DependentUpon>Flight.ts</DependentUpon>
+    </Content>
+    <TypeScriptCompile Include="node\Flight.ts" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="node\LICENSE" />
+    <Content Include="node\package.json" />
+    <Content Include="node\README.markdown" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="node\node_modules\" />
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <Import Project="$(VSToolsPath)\WebApplications\Microsoft.WebApplication.targets" Condition="'$(VSToolsPath)' != ''" />
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v10.0\WebApplications\Microsoft.WebApplication.targets" Condition="false" />
+  <ProjectExtensions>
+    <VisualStudio>
+      <FlavorProperties GUID="{349c5851-65df-11da-9384-00065b846f21}">
+        <WebProjectProperties>
+          <UseIIS>True</UseIIS>
+          <AutoAssignPort>True</AutoAssignPort>
+          <DevelopmentServerPort>0</DevelopmentServerPort>
+          <DevelopmentServerVPath>/</DevelopmentServerVPath>
+          <IISUrl>http://localhost:53911/</IISUrl>
+          <NTLMAuthentication>False</NTLMAuthentication>
+          <UseCustomServer>False</UseCustomServer>
+          <CustomServerUrl>
+          </CustomServerUrl>
+          <SaveServerSettingsInUserFile>False</SaveServerSettingsInUserFile>
+        </WebProjectProperties>
+      </FlavorProperties>
+    </VisualStudio>
+  </ProjectExtensions>
+  <Target Name="BeforeBuild">
+    <Exec Command="&quot;$(PROGRAMFILES)\Microsoft SDKs\TypeScript\0.8.0.0\tsc&quot; @(TypeScriptCompile ->'&quot;%(fullpath)&quot;', ' ')" />
+  </Target>
+</Project>
