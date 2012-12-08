@@ -27,6 +27,10 @@
     <RootNamespace>FlightZ</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <Content Include="node\streams.js">
+      <DependentUpon>streams.ts</DependentUpon>
+    </Content>
+    <TypeScriptCompile Include="node\streams.ts" />
     <TypeScriptCompile Include="node\hub.ts" />
     <TypeScriptCompile Include="node\sim.ts" />
     <Content Include="node\index.js">

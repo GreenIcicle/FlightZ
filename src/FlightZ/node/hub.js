@@ -16,4 +16,3 @@ setTimeout(function () {
         console.log(funnel.stats());
     }, 1000);
 }, 2000);
-

@@ -15,4 +15,3 @@ function simulatedPlane(from, to) {
     return simulator.createSimulationStream(from, to);
 }
 exports.simulatedPlane = simulatedPlane;
-

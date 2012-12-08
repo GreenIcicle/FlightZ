@@ -14,4 +14,3 @@ for(var index = 0; index < 1000; index++) {
 setInterval(function () {
     console.log(pump.stats());
 }, 1000);
-

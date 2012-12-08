@@ -1,6 +1,6 @@
 /// <reference path="node.d.ts"/>
 var Stream = require('stream');
-import flightZ = module('./Flight');
+export import flightZ = module('./Flight');
 
 export class SimulatedPlane extends flightZ.Plane {
 

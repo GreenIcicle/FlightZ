@@ -2,7 +2,7 @@ var __extends = this.__extends || function (d, b) {
     function __() { this.constructor = d; }
     __.prototype = b.prototype;
     d.prototype = new __();
-}
+};
 var Stream = require('stream');
 var flightZ = require('./Flight')
 var SimulatedPlane = (function (_super) {
@@ -71,4 +71,3 @@ function createSimulationStream(fromAirport, toAirport) {
     return stream;
 }
 exports.createSimulationStream = createSimulationStream;
-

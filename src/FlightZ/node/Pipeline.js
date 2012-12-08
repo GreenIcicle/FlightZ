@@ -1,9 +1,10 @@
 var Stream = require('stream');
-var ioClient = require('socket.io-client');
-var ioServer = require('socket.io');
+var WebsocketClient = require('websocket').client;
+var WebsocketServer = require('websocket').server;
 var nodeStream = require('stream')
+var http = require('http')
 var flightZ = require('./Flight')
-var MESSAGE_PLANEUPDATE = "planeUpdate";
+var POSITION_DATA_STREAM = 'flightZ-position-data-stream';
 function createSourceStream(config) {
     if (typeof config === "undefined") { config = null; }
     var url;
@@ -14,42 +15,58 @@ function createSourceStream(config) {
     }
     var stream = new Stream();
     stream.readable = true;
-    var client = ioClient.connect(url);
-    client.socket.reconnect();
-    client.on('connect', function () {
-        client.on(MESSAGE_PLANEUPDATE, function (data) {
-            var plane = flightZ.Plane.parse(data);
+    var endStream = function () {
+        return stream.emit('end');
+    };
+    var client = new WebsocketClient();
+    client.on('connectFailed', function (error) {
+        console.log('Connect Error: ' + error.toString());
+    });
+    client.on('connect', function (connection) {
+        console.log('WebSocket client connected');
+        client.on('disconnect', endStream);
+        client.on('disconnect', endStream);
+        client.on('error', endStream);
+        connection.on('message', function (message) {
+            var plane = flightZ.Plane.parse(message);
             if(plane) {
                 stream.emit('data', plane.toJson());
             }
         });
-        client.on('disconnect', function () {
-            return stream.emit('end');
-        });
         if(config) {
-            client.emit('config', config);
+            connection.sendUTF(JSON.stringify(config));
         }
     });
+    client.connect(url, POSITION_DATA_STREAM);
     return stream;
 }
 exports.createSourceStream = createSourceStream;
-function createSinkStream(socket) {
-    var stream = new Stream();
-    stream.write = function (plane) {
-        return socket.emit(MESSAGE_PLANEUPDATE, plane);
-    };
-    stream.end = function (plane) {
-        if(arguments.length) {
-            socket.emit(MESSAGE_PLANEUPDATE, plane);
+function createSinkStream(connection) {
+    connection.on('message', function (message) {
+        if(message.type === 'utf8') {
+            console.log('Received Message: ' + message.utf8Data);
+            connection.sendUTF(message.utf8Data);
         }
-        stream.writable = false;
-    };
+    });
+    connection.on('close', function (reasonCode, description) {
+        function () {
+            return stream.destroy();
+        }        console.log((new Date()) + ' Peer ' + connection.remoteAddress + ' disconnected.');
+    });
+    var stream = new Stream();
     stream.destroy = function () {
         return stream.writable = false;
     };
-    socket.on('disconnect', function () {
-        return stream.destroy();
-    });
+    stream.write = function (plane) {
+        return connection.sendUTF(plane.toJson());
+    };
+    ; ;
+    stream.end = function (plane) {
+        if(arguments.length) {
+            connection.sendUTF(plane.toJson());
+        }
+        stream.writable = false;
+    };
     stream.writable = true;
     return stream;
 }
@@ -59,19 +76,19 @@ function createHubStream() {
     stream.setMaxListeners(0);
     var messageCount = 0;
     var lastMessageCountReset = Date.now();
-    function processData(data) {
+    function processFlightData(data) {
         var plane = flightZ.Plane.parse(data);
         if(plane) {
             stream.emit('data', JSON.stringify(plane));
         }
     }
     stream.write = function (data) {
-        processData(data);
+        processFlightData(data);
         messageCount++;
     };
     stream.end = function (data) {
         if(arguments.length) {
-            processData(data);
+            processFlightData(data);
         }
     };
     stream.destroy = function () {
@@ -159,12 +176,22 @@ function createPumpStream(config) {
     if(port === 0 && seaport && config.role) {
         port = seaport.register(config.role);
     }
-    var server = ioServer.listen(port);
-    server.set('log level', 1);
+    var server = http.createServer(function (request, response) {
+        response.writeHead(404, "Web sockets only");
+        response.end();
+    });
+    server.listen(port, function () {
+        console.log((new Date()) + ' Server is listening on port #' + port);
+    });
+    var server = new WebsocketServer({
+        httpServer: server,
+        autoAcceptConnections: true
+    });
     var stream = createHubStream();
     var sinks = [];
-    server.sockets.on('connection', function (socket) {
-        var sinkStream = createSinkStream(socket);
+    server.on('request', function (request) {
+        var connection = request.accept(POSITION_DATA_STREAM, request.origin);
+        var sinkStream = createSinkStream(connection);
         stream.pipe(sinkStream);
         sinks.push(sinkStream);
     });
@@ -179,4 +206,3 @@ function createPumpStream(config) {
     return stream;
 }
 exports.createPumpStream = createPumpStream;
-

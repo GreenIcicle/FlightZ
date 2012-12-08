@@ -1,16 +1,12 @@
 /// <reference path="node.d.ts"/>
 var Stream = require('stream');
-var ioClient = require('socket.io-client');
-var ioServer = require('socket.io');
-import nodeStream = module('stream');
-import flightZ = module('./Flight');
+var WebsocketClient = require('websocket').client;
+var WebsocketServer = require('websocket').server;
+export import nodeStream = module('stream');
+import http = module('http');
+export import flightZ = module('./Flight');
 
-var MESSAGE_PLANEUPDATE = "planeUpdate";
-
-interface ISocket {
-    on(messageType: string, callback: () => void );
-    emit(messageType: string, message: any);
-}
+var POSITION_DATA_STREAM = 'flightZ-position-data-stream';
 
 export interface IPumpStream extends nodeStream.ReadWriteStream {
     stats(): any;
@@ -31,43 +27,62 @@ export function createSourceStream(config: any = null): nodeStream.ReadableStrea
     // Create a stream to write the received plane updates to
     var stream = new Stream();
     stream.readable = true;
-    var client = ioClient.connect(url);
-    client.socket.reconnect();
 
-    client.on('connect', () => {
-        client.on(MESSAGE_PLANEUPDATE, data => {
-            var plane = flightZ.Plane.parse(data);
+    var endStream = () => stream.emit('end');
+
+    var client = new WebsocketClient();
+
+    client.on('connectFailed', error => {
+        console.log('Connect Error: ' + error.toString());
+    });
+
+    client.on('connect', connection => {
+        console.log('WebSocket client connected');
+
+        client.on('disconnect', endStream);
+        client.on('disconnect', endStream);
+        client.on('error', endStream);
+
+        connection.on('message', message =>  {
+            var plane = flightZ.Plane.parse(message);
             if (plane) {
                 stream.emit('data', plane.toJson());
             }
         });
 
-        client.on('disconnect', () => stream.emit('end'));
-
         if (config) {
-            client.emit('config', config);
+            connection.sendUTF(JSON.stringify(config));
         }
     });
+
+    client.connect(url, POSITION_DATA_STREAM);
 
     return stream;
 }
 
 // Returns a stream that serves an outgoing web socket connection 
-export function createSinkStream(socket: ISocket): nodeStream.WritableStream {
+export function createSinkStream(connection: any): nodeStream.WritableStream {
+
+    connection.on('message', function(message) {
+        if (message.type === 'utf8') {
+            console.log('Received Message: ' + message.utf8Data);
+            connection.sendUTF(message.utf8Data);
+        }
+    });
+    connection.on('close', function(reasonCode, description) {
+        () => stream.destroy();
+        console.log((new Date()) + ' Peer ' + connection.remoteAddress + ' disconnected.');
+    });
 
     // Create a stream to read plane updates from
     var stream = new Stream();
-
-    stream.write = (plane: flightZ.Plane) => socket.emit(MESSAGE_PLANEUPDATE, plane);
+    stream.destroy = () => stream.writable = false;
+    stream.write = (plane: flightZ.Plane) => connection.sendUTF(plane.toJson());;
 
     stream.end = (plane: flightZ.Plane) => {
-        if (arguments.length) socket.emit(MESSAGE_PLANEUPDATE, plane);
+        if (arguments.length) connection.sendUTF(plane.toJson());
         stream.writable = false;
     };
-
-    stream.destroy = () => stream.writable = false;
-
-    socket.on('disconnect', () => stream.destroy());
 
     stream.writable = true;
     return stream;
@@ -106,14 +121,14 @@ export function createHubStream(): IPumpStream {
     stream.writable = true;
     stream.readable = true;
 
-     stream.stats = () => {
-         var now = Date.now();
-         var messagesPerSecond = messageCount / (now - lastMessageCountReset) * 1000;
-         lastMessageCountReset = now;
-         messageCount = 0;
+    stream.stats = () => {
+        var now = Date.now();
+        var messagesPerSecond = messageCount / (now - lastMessageCountReset) * 1000;
+        lastMessageCountReset = now;
+        messageCount = 0;
 
-         return {
-             messagesPerSecond: Math.floor(messagesPerSecond)
+        return {
+            messagesPerSecond: Math.floor(messagesPerSecond)
         };
     }
 
@@ -125,7 +140,7 @@ export function createFunnelStream(config: any): IPumpStream {
     var sources = [];
     var stream = createHubStream();
     var seaport = null;
-    
+
     var addSource = url => {
         // See that we don't connect to the same source twice
         if (urls.indexOf(url) !== -1) return;
@@ -143,7 +158,7 @@ export function createFunnelStream(config: any): IPumpStream {
         seaport.get(config.role, sourcePorts =>
             sourcePorts.forEach(sourcePort => addSource('http://' + sourcePort.host + ':' + sourcePort.port)));
     };
-    
+
     // If a url is defined in the config directly, use it; otherwise,
     // resolve a role against seaport
     if (config.url) {
@@ -159,7 +174,7 @@ export function createFunnelStream(config: any): IPumpStream {
         registerSeaportSources();
         seaport.on('register', () => registerSeaportSources());
     }
-        
+
     // Extend the statistics of the stream by the number of connections
     var stats = stream.stats;
     stream.stats = () => {
@@ -192,17 +207,31 @@ export function createPumpStream(config: any): IPumpStream {
         port = seaport.register(config.role);
     }
 
-    // ... and have socket.io listen on that port.
-    var server = ioServer.listen(port);
-    server.set('log level', 1);
+    // ... and have a http server listen on that port.
+    var server = http.createServer((request, response) => {
+        response.writeHead(404, "Web sockets only");
+        response.end();
+    });
+
+    server.listen(port, () => {
+        console.log((new Date()) + ' Server is listening on port #' + port);
+    });
+
+    var server = new WebsocketServer({
+        httpServer: server,
+        autoAcceptConnections: true
+    });
 
     var stream = createHubStream();
 
     var sinks = [];
 
-    server.sockets.on('connection', socket => {
-        // create sink stream for socket, pipe messages from hub stream into it
-        var sinkStream = createSinkStream(socket);
+
+    server.on('request', request => {
+        var connection = request.accept(POSITION_DATA_STREAM, request.origin);
+
+         // create sink stream for socket, pipe messages from hub stream into it
+        var sinkStream = createSinkStream(connection);
         stream.pipe(sinkStream);
 
         // Add sink stream to array so the GC does not scrap it

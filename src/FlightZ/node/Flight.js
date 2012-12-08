@@ -1,4 +1,4 @@
-var Position = (function () {
+ï»¿var Position = (function () {
     function Position(longitude, latitude) {
         this.longitude = longitude;
         this.latitude = latitude;
@@ -96,9 +96,9 @@ var Airport = (function () {
 exports.Airport = Airport;
 exports.airports = [
     new Airport('FRA', 'Frankfurt', new Position(50.03774, 8.56213)), 
-    new Airport('MUC', 'München', new Position(48.34598, 11.78721)), 
+    new Airport('MUC', 'MÃ¼nchen', new Position(48.34598, 11.78721)), 
     new Airport('TXL', 'Berlin', new Position(52.55898, 13.2896)), 
-    new Airport('CGN', 'Köln/Bonn', new Position(50.87068, 7.13999)), 
+    new Airport('CGN', 'KÃ¶ln/Bonn', new Position(50.87068, 7.13999)), 
     new Airport('NCE', 'Nizza', new Position(43.6596, 7.20585)), 
     new Airport('CDG', 'Paris Charles de Gaulle', new Position(48.99711, 2.57664)), 
     new Airport('LHR', 'London Heathrow', new Position(51.47155, -0.45723)), 
@@ -116,4 +116,3 @@ exports.airports = [
     new Airport('HDN', 'Tokio', new Position(35.543611, 139.802656)), 
     new Airport('SIN', 'Singapur', new Position(1.355612, 103.99641))
 ];
-

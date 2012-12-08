@@ -1,7 +1,7 @@
 /// <reference path="node.d.ts"/>
-import flightZ = module('./Flight');
-import pipeline = module('./Pipeline');
-import simulator = module('./Simulator');
+export import flightZ = module('./Flight');
+export import pipeline = module('./Pipeline');
+export import simulator = module('./Simulator');
 
 export function pump(config: any) => pipeline.createPumpStream(config);
 export function funnel(config: any) => pipeline.createFunnelStream(config);
