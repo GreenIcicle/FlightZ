@@ -4,7 +4,7 @@ var WebsocketServer = require('websocket').server;
 var nodeStream = require('stream')
 var http = require('http')
 var flightZ = require('./Flight')
-var POSITION_DATA_STREAM = 'flightZ-position-data-stream';
+var POSITION_DATA_STREAM = 'flightz-position-data-stream';
 function createSourceStream(config) {
     if (typeof config === "undefined") { config = null; }
     var url;
@@ -28,13 +28,13 @@ function createSourceStream(config) {
         client.on('disconnect', endStream);
         client.on('error', endStream);
         connection.on('message', function (message) {
-            var plane = flightZ.Plane.parse(message);
+            var plane = flightZ.Plane.parse(message.utf8Data);
             if(plane) {
                 stream.emit('data', plane.toJson());
             }
         });
         if(config) {
-            connection.sendUTF(JSON.stringify(config));
+            connection.sendUTF(config);
         }
     });
     client.connect(url, POSITION_DATA_STREAM);
@@ -44,26 +44,23 @@ exports.createSourceStream = createSourceStream;
 function createSinkStream(connection) {
     connection.on('message', function (message) {
         if(message.type === 'utf8') {
-            console.log('Received Message: ' + message.utf8Data);
-            connection.sendUTF(message.utf8Data);
         }
     });
     connection.on('close', function (reasonCode, description) {
-        function () {
-            return stream.destroy();
-        }        console.log((new Date()) + ' Peer ' + connection.remoteAddress + ' disconnected.');
+        stream.destroy();
+        console.log((new Date()) + ' Peer ' + connection.remoteAddress + ' disconnected.');
     });
     var stream = new Stream();
     stream.destroy = function () {
         return stream.writable = false;
     };
     stream.write = function (plane) {
-        return connection.sendUTF(plane.toJson());
+        return connection.sendUTF(plane);
     };
     ; ;
     stream.end = function (plane) {
         if(arguments.length) {
-            connection.sendUTF(plane.toJson());
+            connection.sendUTF(plane);
         }
         stream.writable = false;
     };
@@ -185,7 +182,7 @@ function createPumpStream(config) {
     });
     var server = new WebsocketServer({
         httpServer: server,
-        autoAcceptConnections: true
+        autoAcceptConnections: false
     });
     var stream = createHubStream();
     var sinks = [];

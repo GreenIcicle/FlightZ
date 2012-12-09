@@ -6,7 +6,7 @@ export import nodeStream = module('stream');
 import http = module('http');
 export import flightZ = module('./Flight');
 
-var POSITION_DATA_STREAM = 'flightZ-position-data-stream';
+var POSITION_DATA_STREAM = 'flightz-position-data-stream';
 
 export interface IPumpStream extends nodeStream.ReadWriteStream {
     stats(): any;
@@ -44,14 +44,14 @@ export function createSourceStream(config: any = null): nodeStream.ReadableStrea
         client.on('error', endStream);
 
         connection.on('message', message =>  {
-            var plane = flightZ.Plane.parse(message);
+            var plane = flightZ.Plane.parse(message.utf8Data);
             if (plane) {
                 stream.emit('data', plane.toJson());
             }
         });
 
         if (config) {
-            connection.sendUTF(JSON.stringify(config));
+            connection.sendUTF(config);
         }
     });
 
@@ -65,22 +65,22 @@ export function createSinkStream(connection: any): nodeStream.WritableStream {
 
     connection.on('message', function(message) {
         if (message.type === 'utf8') {
-            console.log('Received Message: ' + message.utf8Data);
-            connection.sendUTF(message.utf8Data);
+            // TODO: apply config
         }
     });
-    connection.on('close', function(reasonCode, description) {
-        () => stream.destroy();
+
+    connection.on('close', (reasonCode, description) => {
+        stream.destroy();
         console.log((new Date()) + ' Peer ' + connection.remoteAddress + ' disconnected.');
     });
 
     // Create a stream to read plane updates from
     var stream = new Stream();
     stream.destroy = () => stream.writable = false;
-    stream.write = (plane: flightZ.Plane) => connection.sendUTF(plane.toJson());;
+    stream.write = (plane: flightZ.Plane) => connection.sendUTF(plane);;
 
     stream.end = (plane: flightZ.Plane) => {
-        if (arguments.length) connection.sendUTF(plane.toJson());
+        if (arguments.length) connection.sendUTF(plane);
         stream.writable = false;
     };
 
@@ -219,7 +219,7 @@ export function createPumpStream(config: any): IPumpStream {
 
     var server = new WebsocketServer({
         httpServer: server,
-        autoAcceptConnections: true
+        autoAcceptConnections: false
     });
 
     var stream = createHubStream();
